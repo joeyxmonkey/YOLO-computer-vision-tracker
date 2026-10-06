@@ -1,0 +1,20 @@
+@'
+
+# Python environments and caches
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+
+# Model weights and local videos
+*.pt
+*.mp4
+*.avi
+*.mov
+*.mkv
+
+# Local secrets
+.env
+.env.*
+!.env.example
+'@ | Add-Content -Path .gitignore
