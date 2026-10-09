@@ -12,6 +12,7 @@ __pycache__/
 *.avi
 *.mov
 *.mkv
+*.yaml
 
 # Local secrets
 .env

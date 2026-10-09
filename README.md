@@ -52,10 +52,10 @@ These commands use the virtual environment's Python directly, so activation is o
 
 ### 4. Add a video
 
-Place your video in the project folder and name it `Sample2.mp4`, matching the current code:
+Place your video in the project folder and name it `Sample.mp4`, matching the current code:
 
 ```python
-video = cv2.VideoCapture("Sample2.mp4")
+video = cv2.VideoCapture("Sample.mp4")
 ```
 
 Alternatively, edit that line in `main.py` to use your filename or full path. Match the filename's capitalization when running on a case-sensitive filesystem.
