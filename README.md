@@ -1,147 +1,175 @@
 # YOLO Video Tracker
 
-A local video viewer that detects objects with **Ultralytics YOLO26m** and follows them across frames with **ByteTrack**. OpenCV displays bounding boxes, class names, tracking IDs, confidence scores, and a center marker for each tracked object.
+Detect and track objects in local videos using **Ultralytics YOLO26** and **ByteTrack**. The OpenCV viewer displays bounding boxes, class names, tracking IDs, confidence scores, and object centers.
 
-This repository contains the original tracker, maintained separately from Inspection Desk in `video-tracker`.
-
-## Quick start
-
-The local `.venv` is already set up. Open PowerShell in **video-tracker-yolo** and run:
-
-```powershell
-.\.venv\Scripts\python.exe main.py
-```
-
-The viewer opens `sample.mp4` using `yolo26m.pt`. Keep the video window focused while watching. Playback ends at the end of the video; to stop early, press **Ctrl+C** in the terminal. There is currently no Q or Escape shortcut, and closing the video window alone may not stop the program.
-
-Run from the project folder because video and model paths are relative to the current working directory. Environment activation is optional when using the command above.
+![Python](https://img.shields.io/badge/python-3.11-blue)
+![License](https://img.shields.io/badge/license-AGPL--3.0-blue)
 
 ## Features
 
-- Object detection using the pretrained YOLO26m model.
-- Persistent ByteTrack IDs across video frames.
-- Overlays showing the object class, tracking ID, confidence percentage, bounding box, and center point.
-- Local video playback in an OpenCV window.
-- Automatic GPU use when a supported GPU and CUDA-enabled PyTorch are available; CPU execution otherwise.
+- Pretrained YOLO26 object detection with persistent ByteTrack tracking.
+- Configurable video source, model, confidence threshold, and inference device.
+- Resizable video display that preserves the input aspect ratio.
+- Q, Escape, and window-close controls.
+- Processing without a display window for batch checks.
+- CPU execution and optional NVIDIA GPU acceleration.
 
-For example, `car #4 87%` identifies a car detection with track ID 4 and a model confidence score of 87%. IDs describe tracks within the current run and may change when an object disappears or tracking is lost.
+## Requirements
 
-## Set up a new environment
+- **64-bit Python 3.11** and Git.
+- A local video you have permission to use.
+- A graphical desktop for the viewer; use `--no-display` without a desktop.
+- Internet access to install packages and download pretrained weights on first use.
 
-Use **64-bit Python 3.11**. The existing environment uses Python **3.11.9**.
+Windows is the primary tested desktop platform. Commands for macOS and Linux are also provided; their desktop and inference behavior has not yet been independently verified.
 
-From PowerShell in the project folder:
+## Installation
+
+Clone the repository:
+
+```sh
+git clone https://github.com/joeyxmonkey/YOLO-computer-vision-tracker.git
+cd YOLO-computer-vision-tracker
+```
+
+Create your own virtual environment and install the dependencies.
+
+**Windows (PowerShell)**
 
 ```powershell
 python --version
 python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install --upgrade pip
-.\.venv\Scripts\python.exe -m pip install -r requirements.txt "lap==0.5.13"
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
 .\.venv\Scripts\python.exe -m pip check
 ```
 
-Check that `python --version` reports Python 3.11 before creating the environment. If the Windows Python launcher is configured, `py -3.11 -m venv .venv` is another option. If neither command finds Python, run the installed Python 3.11 executable by its full path.
+Check that `python --version` reports Python 3.11. If your Python launcher is configured, you can use `py -3.11 -m venv .venv` instead.
 
-`requirements.txt` pins OpenCV and Ultralytics. The separate `lap` installation provides ByteTrack's assignment dependency, avoiding an automatic installation when tracking first starts. PyTorch and other dependencies are installed through Ultralytics; GPU support requires the appropriate PyTorch build below.
+**macOS / Linux**
 
-### NVIDIA GPU setup
-
-The local environment was verified on an **NVIDIA GeForce RTX 3080 Ti** with:
-
-| Component | Installed version |
-| --- | --- |
-| Python | 3.11.9 |
-| OpenCV (`opencv-python`) | 5.0.0.93 |
-| Ultralytics | 8.4.173 |
-| PyTorch | 2.11.0+cu128 |
-| Torchvision | 0.26.0+cu128 |
-| LAP | 0.5.13 |
-
-To reproduce the tested GPU build after creating `.venv`, install PyTorch before the remaining requirements:
-
-```powershell
-.\.venv\Scripts\python.exe -m pip install torch==2.11.0 torchvision==0.26.0 --index-url https://download.pytorch.org/whl/cu128
-.\.venv\Scripts\python.exe -m pip install -r requirements.txt "lap==0.5.13"
+```sh
+python3.11 -m venv .venv
+.venv/bin/python -m pip install --upgrade pip
+.venv/bin/python -m pip install -r requirements.txt
+.venv/bin/python -m pip check
 ```
 
-If replacing an existing CPU-only PyTorch installation, add `--force-reinstall` to the PyTorch command. A compatible NVIDIA driver is required. See the [official PyTorch installation instructions](https://pytorch.org/get-started/previous-versions/) for other hardware or builds.
+The commands below use the Windows environment path. On macOS or Linux, replace `.\.venv\Scripts\python.exe` with `.venv/bin/python`.
 
-Check GPU availability:
+Virtual environments, input videos, and downloaded model weights are excluded from Git. They are not included when you clone this repository.
+
+### Optional NVIDIA GPU setup
+
+For CUDA acceleration, install the appropriate PyTorch and Torchvision builds for your operating system and NVIDIA driver, following the [official PyTorch instructions](https://pytorch.org/get-started/locally/). Run the installation through this project's virtual-environment Python, then install `requirements.txt`.
+
+Check whether the environment can use CUDA:
 
 ```powershell
-.\.venv\Scripts\python.exe -c "import torch; print('PyTorch:', torch.__version__); print('CUDA available:', torch.cuda.is_available()); print('Device:', torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'CPU')"
+.\.venv\Scripts\python.exe -c "import torch; print('CUDA available:', torch.cuda.is_available()); print('Device:', torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'CPU')"
 ```
 
-### Optional activation
+The tracker selects a device automatically unless you specify `--device`. Use `--device cpu` to force CPU execution or `--device 0` for the first CUDA GPU. GPU support depends on your hardware, driver, and PyTorch installation.
+
+## Usage
+
+Supply a video path:
 
 ```powershell
-.\.venv\Scripts\Activate.ps1
-python main.py
+.\.venv\Scripts\python.exe main.py --source "C:\Videos\clip.mp4"
 ```
 
-Use `deactivate` when finished. If PowerShell blocks activation, use `.\.venv\Scripts\python.exe main.py` directly.
+Replace the example path with your own video. Relative paths are resolved from the directory where you run the command. If `--source` is omitted, the tracker looks for `sample.mp4` in that directory; no sample video is distributed with the repository.
 
-## Choose a video or model
+The default model is `yolo26m.pt`. Ultralytics downloads supported pretrained weights if they are missing. For offline use, download the weights beforehand and pass their local path with `--model`.
 
-Settings currently live in `main.py`; there are no command-line options or settings screen.
+**Use the smaller model:**
 
-| Setting | Current value | How to change it |
+```powershell
+.\.venv\Scripts\python.exe main.py --source "C:\Videos\clip.mp4" --model yolo26n.pt
+```
+
+**Choose a confidence threshold and GPU:**
+
+```powershell
+.\.venv\Scripts\python.exe main.py --source "C:\Videos\clip.mp4" --conf 0.25 --device 0
+```
+
+**Process a short clip without opening a window:**
+
+```powershell
+.\.venv\Scripts\python.exe main.py --source "C:\Videos\clip.mp4" --no-display --max-frames 30
+```
+
+**Show all options:**
+
+```powershell
+.\.venv\Scripts\python.exe main.py --help
+```
+
+| Option | Default | Description |
 | --- | --- | --- |
-| Video source | `sample.mp4` | Change the path in `cv2.VideoCapture(...)`. |
-| Model | `yolo26m.pt` | Change the filename in `YOLO(...)`; `yolo26n.pt` is also available locally. |
-| Tracker | `bytetrack.yaml` | Change `tracker` in `model.track(...)`. This name uses Ultralytics' bundled configuration. |
-| Detection confidence threshold | `0.1` | Change `conf` in `model.track(...)`. |
-| Track persistence | `True` | Keeps tracker state between successive frames. |
-| Display size | `1920 x 1080` | Change the dimensions in `cv2.resize(...)`. |
-| Display wait | `30` milliseconds | Change `cv2.waitKey(30)`. Processing time also affects playback speed. |
+| `--source` | `sample.mp4` | Local input video path. |
+| `--model` | `yolo26m.pt` | Supported model name or local weights path. |
+| `--conf` | `0.1` | Detection confidence threshold between 0 and 1. |
+| `--device` | Automatic | Inference device, such as `cpu` or `0`. |
+| `--width` | `1280` | Display width in pixels; preserves aspect ratio. |
+| `--no-display` | Off | Run inference without a video window. |
+| `--max-frames` | Entire video | Stop after the specified positive number of frames. |
 
-For example, to open another local video:
+### Playback controls
 
-```python
-video = cv2.VideoCapture("sample2.mp4")
-```
+With the video window focused, press **Q** or **Escape** to stop. Closing the window also ends playback. **Ctrl+C** in the terminal interrupts processing. Playback ends automatically at the end of the video.
 
-Use an absolute path or a path relative to the folder where you launch the program. For Windows absolute paths in Python, use a raw string such as `r"C:\Videos\clip.mp4"`.
+Playback speed includes inference time and a 30 ms display wait per frame; it is not synchronized to the video's original frame rate. There are no pause or seek controls.
 
-The confidence threshold filters detections before tracking. ByteTrack has its own association thresholds, so a detection may not immediately receive an ID. The viewer draws overlays only for detections with tracking IDs. Confidence scores are model scores, not calibrated probabilities of correctness.
+### Reading the overlays
 
-## Project files
+A label such as `car #4 87%` shows the detected class, tracking ID, and model confidence score. The center marker and bounding box indicate the object's position.
 
-```text
-video-tracker-yolo/
-|-- main.py             # Video decoding, detection, tracking, and display
-|-- requirements.txt    # Pinned OpenCV and Ultralytics versions
-|-- README.md
-|-- .gitignore
-|-- .venv/              # Local Python environment (ignored by Git)
-|-- sample.mp4          # Default input video (local, ignored by Git)
-|-- sample2.mp4         # Additional local sample, when present
-|-- yolo26m.pt          # Default model weights (local, ignored by Git)
-`-- yolo26n.pt          # Smaller model weights, when present
-```
-
-Model weights, video files, and `.venv` are local assets and are not included in a new clone. Supply a video named `sample.mp4` or update the input path. Ultralytics can download supported missing pretrained weights on first use when internet access is available. For offline use, place the required weights in the folder beforehand.
+Only detections with assigned tracking IDs receive overlays. ByteTrack applies its own association thresholds, so a detection may not immediately receive an ID. IDs can change after occlusion or lost tracking and are not permanent object identities. Confidence scores are not calibrated probabilities of correctness.
 
 ## Troubleshooting
 
-| Problem | What to check |
+| Problem | Suggested fix |
 | --- | --- |
-| `ModuleNotFoundError` for `cv2`, `ultralytics`, or `lap` | Use `.\.venv\Scripts\python.exe` and reinstall the requirements plus `lap` using the setup commands above. Select this same interpreter in your editor. |
-| Program exits without showing a video | Confirm the input file exists, the path is correct, and you started from the project folder. The current script exits when a frame cannot be read. |
-| Missing model or failed download | Place `yolo26m.pt` in the project folder, or allow the initial pretrained-weight download. |
-| CUDA reports `False` | Check the NVIDIA driver and that this environment has a CUDA-enabled PyTorch build. CPU execution remains available. |
-| Playback is slow | Verify GPU availability or try `yolo26n.pt`. Playback speed includes inference time and the display wait. |
-| Boxes or IDs appear late, or IDs change | Tracking depends on detection quality, association thresholds, occlusion, and motion. IDs are not permanent object identities. |
-| Video looks stretched | The display resizes every frame to 1920 x 1080. Adjust those dimensions to match the video's aspect ratio. |
-| OpenCV cannot open a display window | Use the desktop `opencv-python` package from the requirements, rather than a headless build, and run in a graphical desktop session. |
+| Python or an import is missing | Install Python 3.11, create `.venv`, and install `requirements.txt`. Use that environment's interpreter in your terminal or editor. |
+| Video not found or cannot be opened | Check `--source`, file permissions, and whether OpenCV supports the video's codec. |
+| Model download fails | Check internet access, or download supported weights separately and pass a local path with `--model`. |
+| CUDA is unavailable | Check the NVIDIA driver and PyTorch build, or use `--device cpu`. |
+| Playback is slow | Try `--model yolo26n.pt` or a compatible GPU. `--width` changes the display size, not inference resolution. |
+| OpenCV cannot open a window | Run in a desktop session with `opencv-python`, or use `--no-display`. Avoid installing conflicting OpenCV variants in the same environment. |
+| IDs change or objects are missed | Try a different model or threshold and inspect the footage. Motion, lighting, occlusion, and detection quality affect tracking. |
 
-## Current scope
+## Development
 
-This is a viewing prototype. It does not save annotated video, tracking records, inspection decisions, or CSV reports. It uses a pretrained general object detector; it has not been validated as a food-defect inspection system. There are no pause, seek, or playback-speed controls.
+```powershell
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+```
 
-The environment was checked by decoding the local sample video and running YOLO26m with ByteTrack on the RTX 3080 Ti. A tracking ID was produced on frame 6, and the package dependency check passed. This is a setup check, not an accuracy benchmark.
+The tests exercise failure handling, resource cleanup, playback controls, and argument validation using mocked video/model interfaces. Automated checks run them on Windows and Linux without downloading weights or requiring a GPU. They do not measure tracking accuracy or replace a desktop/inference check.
 
-## References
+See [CONTRIBUTING.md](CONTRIBUTING.md) for reporting bugs and submitting changes.
 
-- [Ultralytics setup and installation](https://docs.ultralytics.com/quickstart/)
-- [PyTorch installation builds](https://pytorch.org/get-started/previous-versions/)
+## Project structure
+
+```text
+YOLO-computer-vision-tracker/
+|-- .github/workflows/checks.yml  # Automated checks
+|-- tests/test_tracker.py        # Control-flow tests
+|-- main.py                      # Command-line entry point and viewer
+|-- requirements.txt             # Application dependencies
+|-- CONTRIBUTING.md
+|-- LICENSE
+`-- README.md
+```
+
+## Limitations
+
+This application processes local video files and displays general object detections. It does not save annotated video, tracking records, or reports. It does not include a webcam interface, training pipeline, or accuracy benchmark. Detection and tracking quality depend on the model and input footage.
+
+## License and acknowledgments
+
+This project is licensed under the **GNU Affero General Public License v3.0 (AGPL-3.0-only)**. See [LICENSE](LICENSE) for the full terms.
+
+Built with [Ultralytics YOLO](https://github.com/ultralytics/ultralytics), [OpenCV](https://opencv.org/), and [PyTorch](https://pytorch.org/). Tracking uses Ultralytics' ByteTrack integration. Third-party libraries and pretrained weights retain their respective licenses; see [Ultralytics licensing](https://www.ultralytics.com/license) for its code and models.

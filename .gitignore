@@ -1,21 +1,30 @@
-@'
-
 # Python environments and caches
 .venv/
 venv/
 __pycache__/
 *.py[cod]
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+build/
+dist/
 
-# Model weights and local videos
+# Downloaded model weights, input videos, and generated output
 *.pt
+*.onnx
 *.mp4
 *.avi
 *.mov
 *.mkv
-*.yaml
+*.webm
+runs/
+Ultralytics/
 
-# Local secrets
+# Local secrets and editor/OS files
 .env
 .env.*
 !.env.example
-'@ | Add-Content -Path .gitignore
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
